@@ -75,7 +75,7 @@ looks something like this. */
 
 psql -h machine_name -d database_name -U username --it should prompt you for a password
 
-/* WORKING WITH DATA */
+/* CREATING TABLES */
 
 /* Below is an example of how to create a table with several different types of variables. In SQL, 
 every variable's data type must declared individually. It is not possible to declare several variables 
@@ -205,6 +205,8 @@ add COLUMN Difficulty SMALLINT;
 /* To review data in a table, you can use the following code. */
 select * from table_name;
 
+/* INSERTING DATA INTO TABLES */
+
 /* This is how you can insert into a table and copy from table to table. 
 Order matters when inserting and copying data and you should insert all 
 new data in one commit, not iteratively, for best perfomance. */
@@ -248,6 +250,8 @@ delete from table_name_1 as alias_1
 using table_name_2 as alias_2
 where join_condition; --such as P.studentID=S.studentID
 
+/* SELECT STATEMENTS */
+
 /* Select statements allow you to grab data. Below is the general structure. */
 select table.column_name or alias.column_name or function(column.name) as alias
 from table_name as alias
@@ -282,3 +286,133 @@ select admissionyear, count(distinct(studentage)) as NumAges
 from students
 group by admissionyear
 order by admissionyear desc;
+
+/* Some other ecample of select statements. */
+
+select a.studentID
+from (
+	select studentID,
+	from grades
+	group by studentID
+) as a
+where a.gpa >= 3.0
+order by a.studentID;
+
+/* These nested select statements allow you to presort and filter the data retrieved 
+prior to applying additional sorting or conditional statements. In the above example, 
+studentIDs are selected from the grades table and grouped, prior to being filtered 
+with the conditional where statement. Other useful select functions include sum, 
+max, avg, stddev, etc. */
+
+/* We can also use case statements in the select statements. Case statements allow 
+for conditons in the select statement. */
+
+select a.studentID
+(case 
+	when a.gpa >= 3.2 then 'Summa Cum Laude'
+	when a.gpa < 3.2 and a.gpa >= 2.7 then 'Magna Cum Laude'
+	when a.gpa < 2.7 and a.gpa >= 2.5 then 'Cum Laude'
+	else 'No Honors'
+end) as honors
+from (
+	select studentID
+		   avg(grade) as gpa
+	from grades
+	group by studentID 
+) as a
+order by a.studentID
+
+/* The above example applies conditional statements to a new case and assigns
+that case (honors) to the observations. GPA is assigned as an alias and is 
+defined as the average grade from the grades table. */
+
+/* CROSS-TABLE QUERIES */
+
+/* Cross-table queries involve inner joins, outer joins, and full joins. We only use 
+an inner join when keys exist in both tables. A left join keeps the data on the left 
+table, and sets a null value on the right table if the key does not exist. A right 
+join is the same, just in the reverse order. In a full join, both the right and left 
+tables are joined together and null values are assigned to both tables if the key 
+does not exist in either. 
+
+Below is an example of an inner join. */
+
+select 	i.firstname, 
+		i.lastname, 
+		c.courseid, 
+		c.title
+from 		instructors as i 
+inner join 	courses as c /* or left, right, or full join */ 
+on i.instructorid = c.instructorid;
+
+/* It is possible to join more than one table at a time. */
+
+select 	i.firstname, 
+		i.lastname, 
+		c.courseid, 
+		c.title
+from 		instructors as i 
+inner join students as s
+on i.studentid = s.studentid
+inner join 	courses as c  
+on i.instructorid = c.instructorid;
+
+/* Combining query results can be useful. We can combine query results using a union, 
+intersection, or except statement. */
+
+/* Union */
+(
+	select distinct
+		studentid
+	from 	grades
+	where	courseid = 303
+) union (
+	select distinct 
+		studentid 
+	from 	grades
+	where	courseid = 306
+)
+
+/* Intersection */
+(
+	select distinct
+		studentid
+	from 	grades
+	where	courseid = 303
+) intersect (
+	select distinct 
+		studentid 
+	from 	grades
+	where	courseid = 306
+)
+
+/* Except */
+(
+	select distinct
+		studentid
+	from 	grades
+	where	courseid = 303
+) except (
+	select distinct 
+		studentid 
+	from 	grades
+	where	courseid = 306
+)
+
+/* ETL: EXTRACT, TRANSFORM, LOAD */
+
+/* What does it mean to extract? It means to load source data from disparate sources, 
+apply metadata about the data, and also to change the data capture. API's fall into 
+this category. 
+
+The transformation stage is where we cleanse and validate data, handle data lookups 
+(i.e. how to handle missing values), stnadardizing data, filtering, inetgrating and 
+merging from multiple sources, and aggregating. 
+
+The load stage is where we move that data into a target in an efficient manner, 
+often exploiting bulk loading or sequentially inserting, updating, and upserting 
+data. */
+
+/* There are many benefits to using ETL friendly languages and frameworks as opposed 
+to using Python, R, or JavaScript for the same tasks. SQL and other ETL friendly 
+languages are faster, more scalable, easier to administer, and aid in repeatability. */
